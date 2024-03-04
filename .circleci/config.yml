@@ -1,0 +1,45 @@
+version: 2.1
+
+parameters:
+  parallelism:
+    type: integer
+    default: 5
+
+executors:
+  ubuntu2204:
+    machine:
+      image: ubuntu-2204:2024.02.7
+    resource_class: medium
+
+jobs:
+  docker-pull:
+    parameters:
+      machine:
+        type: string
+        description: CircleCI Machine executor image
+      pull-img:
+        type: string
+        description: Docker image to pull
+    machine:
+      image: << parameters.machine >>
+    resource_class: medium
+    parallelism: << pipeline.parameters.parallelism >>
+    steps:
+      - run: docker info
+      - run: docker pull << parameters.pull-img >>
+
+workflows:
+  scheduled:
+    when:
+      equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+    jobs:
+      - docker-pull:
+          matrix:
+            parameters:
+              machine:
+                - ubuntu-2204:2024.02.7
+                - ubuntu-2204:2024.01.2
+              pull-img:
+                - registry.access.redhat.com/ubi9/nodejs-16:1
+                - registry.access.redhat.com/ubi9/nodejs-18:latest
+  
