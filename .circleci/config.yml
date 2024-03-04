@@ -31,7 +31,9 @@ jobs:
 workflows:
   scheduled:
     when:
-      equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      or:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ api, << pipeline.trigger_source >> ]
     jobs:
       - docker-pull:
           matrix:
