@@ -11,6 +11,32 @@ executors:
       image: ubuntu-2204:2024.02.7
     resource_class: medium
 
+commands:
+  enable_debug_on_docker_daemon:
+    steps:
+      # ASSUMPTION: /etc/docker/daemon.json does not exist on CircleCI's Linux machines
+      - run:
+          name: add debug flag for Docker daemon config
+          command: |
+            sudo bash -c "jq -cn '.debug = true' > /etc/docker/daemon.json"
+      - run:
+          name: restart Docker daemon
+          command: |
+            sudo systemctl restart docker
+  collect_docker_daemon_logs:
+    parameters:
+      last_n_lines:
+        type: integer
+        default: 5000
+    steps:
+      - run:
+          name: collect Docker daemon logs
+          when: always
+          command: |
+            journalctl -u docker.service -n << parameters.last_n_lines >> > docker_daemon.log
+      - store_artifacts:
+          path: docker_daemon.log
+
 jobs:
   docker-pull:
     parameters:
@@ -25,8 +51,10 @@ jobs:
     resource_class: medium
     parallelism: << pipeline.parameters.parallelism >>
     steps:
+      - enable_debug_on_docker_daemon
       - run: docker info
       - run: docker pull << parameters.pull-img >>
+      - collect_docker_daemon_logs
 
 workflows:
   scheduled:
