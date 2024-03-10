@@ -36,6 +36,9 @@ commands:
             journalctl -u docker.service -n << parameters.last_n_lines >> > docker_daemon.log
       - store_artifacts:
           path: docker_daemon.log
+      # to check DNS settings
+      - store_artifacts:
+          path: /etc/resolv.conf
 
 jobs:
   docker-pull:
@@ -54,6 +57,10 @@ jobs:
       - enable_debug_on_docker_daemon
       - run: docker info
       - run: docker pull << parameters.pull-img >>
+      - run:
+          name: curl to registry
+          when: on_fail
+          command: curl https://registry.access.redhat.com
       - collect_docker_daemon_logs
 
 workflows:
