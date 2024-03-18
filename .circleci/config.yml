@@ -56,11 +56,21 @@ jobs:
       - run:
           name: dig registry
           command: dig registry.access.redhat.com
+      - run:
+          name: collect tcpdump
+          command: |
+            mkdir tcpdumps
+            # will generate files like tcpdumps/out.pcap0 ... tcpdumps/out.pcap9
+            # ref: https://opensource.com/article/18/10/introduction-tcpdump#:~:text=Tcpdump%20is%20a%20command%20line,in%20a%20variety%20of%20cases.
+            sudo tcpdump -ni any -W 10 -C 100 -w tcpdumps/out.pcap
+          background: true
       - run: docker pull << parameters.pull-img >>
       - run:
           name: dig registry (again)
           when: on_fail
           command: dig registry.access.redhat.com
+      - store_artifacts:
+          path: tcpdumps
       - collect_docker_daemon_logs
 
 workflows:
